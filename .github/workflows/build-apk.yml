@@ -26,6 +26,15 @@ jobs:
       - name: Install npm dependencies
         run: npm install
 
+      # 1. Build your web app (React/Vue/Angular/Ionic)
+      # If your package.json uses a different build command, change this.
+      - name: Build Web Assets
+        run: npm run build
+
+      # 2. Sync Capacitor plugins and web assets to the Android folder
+      - name: Sync Capacitor
+        run: npx cap sync android
+
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
