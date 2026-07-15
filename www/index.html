@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Çalışma Takibi">
+<meta name="theme-color" content="#10141C">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>Çalışma Takibi</title>
+<script>
+  try{
+    var raw = localStorage.getItem('calismaTakibiState_v2');
+    var theme = 'dark';
+    if(raw){ var parsed = JSON.parse(raw); if(parsed && parsed.theme) theme = parsed.theme; }
+    document.documentElement.setAttribute('data-theme', theme);
+  }catch(e){ document.documentElement.setAttribute('data-theme','dark'); }
+</script>
+<style>
+  :root, [data-theme="dark"]{
+    --bg:#10141C;
+    --card:#1A2130;
+    --input-bg:#212A3C;
+    --ink:#EDEFF3;
+    --muted:#8A93A6;
+    --border:#2B3244;
+    --leader:#E3A62F;
+    --leader-soft:rgba(227,166,47,0.14);
+    --leader-text:#E3A62F;
+    --action:#4CB3A0;
+    --action-soft:rgba(76,179,160,0.14);
+    --action-text:#4CB3A0;
+    --action-contrast:#0D1119;
+    --danger:#E2735A;
+    --row-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    --font-display: 'Iowan Old Style','Palatino Linotype',Georgia,'Times New Roman',serif;
+    --font-body: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  }
+  [data-theme="light"]{
+    --bg:#EEF1F4;
+    --card:#FFFFFF;
+    --input-bg:#FFFFFF;
+    --ink:#1C2333;
+    --muted:#6B7686;
+    --border:#DDE2E8;
+    --leader:#D99B1F;
+    --leader-soft:#FBF0D6;
+    --leader-text:#9C6B10;
+    --action:#33685F;
+    --action-soft:#E3EEEB;
+    --action-text:#2C6058;
+    --action-contrast:#FFFFFF;
+    --danger:#A6462F;
+    --row-shadow: 0 1px 2px rgba(28,35,51,0.06);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background-color:var(--bg);
+    background-repeat:repeat;
+    background-size:260px 120px;
+    font-family:var(--font-body);
+    color:var(--ink);
+    -webkit-tap-highlight-color: transparent;
+  }
+  [data-theme="dark"] body{
+    background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='260'%20height='120'%3E%3Ctext%20x='0'%20y='70'%20font-family='Georgia,serif'%20font-size='30'%20font-weight='700'%20letter-spacing='3'%20fill='rgba(255,255,255,0.05)'%20transform='rotate(-16%20130%2060)'%3EYKS2027%3C/text%3E%3C/svg%3E");
+  }
+  [data-theme="light"] body{
+    background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='260'%20height='120'%3E%3Ctext%20x='0'%20y='70'%20font-family='Georgia,serif'%20font-size='30'%20font-weight='700'%20letter-spacing='3'%20fill='rgba(28,35,51,0.045)'%20transform='rotate(-16%20130%2060)'%3EYKS2027%3C/text%3E%3C/svg%3E");
+  }
+  .wrap{ max-width:480px; margin:0 auto; padding:24px 16px 48px; }
+
+  .header-top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; gap:10px; }
+  h1{ font-family:var(--font-display); font-size:26px; font-weight:700; margin:0 0 4px; letter-spacing:-0.3px; }
+  .subtitle{ color:var(--muted); font-size:12.5px; }
+  .header-actions{ display:flex; gap:8px; flex:0 0 auto; }
+  .icon-btn{
+    width:38px; height:38px; border-radius:11px;
+    background:var(--card); border:1px solid var(--border); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .icon-btn:active{ transform:scale(0.93); }
+
+  .stat-card{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:16px 18px; margin-bottom:8px;
+  }
+  .stat-card .label{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+  .stat-card .value{ font-family:var(--font-display); font-size:24px; font-weight:700; }
+
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px; }
+  .stat-chip{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:10px 12px; }
+  .stat-chip .label{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:3px; }
+  .stat-chip .value{ font-family:var(--font-display); font-weight:700; font-size:15px; }
+
+  .list{ margin-top:4px; }
+  .row{
+    background:var(--card); border-radius:14px; margin-bottom:10px;
+    box-shadow:var(--row-shadow); border:1px solid var(--border); overflow:hidden;
+  }
+  .row.leader{ border-color:var(--leader); background:var(--leader-soft); }
+  .row-main{ display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; min-height:44px; }
+
+  .icon-badge{
+    flex:0 0 34px; height:34px; border-radius:50%; background:var(--border);
+    display:flex; align-items:center; justify-content:center; font-size:16px;
+  }
+  .row.leader .icon-badge{ background:var(--leader); }
+
+  .row-info{ flex:1; min-width:0; }
+  .eyebrow{ font-size:10.5px; font-weight:700; letter-spacing:0.8px; color:var(--leader-text); margin-bottom:2px; }
+  .topic-name{ font-size:15.5px; font-weight:600; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bar-track{ height:6px; border-radius:4px; background:rgba(128,128,128,0.18); overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:4px; background:var(--action); width:0%; transition:width 0.4s ease; }
+  .row.leader .bar-fill{ background:var(--leader); }
+  .live-line{ font-family:var(--font-display); font-size:11px; color:var(--action-text); margin-top:5px; display:flex; align-items:center; gap:5px; }
+  .live-dot{ width:6px; height:6px; border-radius:50%; background:var(--action-text); animation:pulse 1.4s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+
+  .time-value{ flex:0 0 auto; font-family:var(--font-display); font-weight:700; font-size:14.5px; white-space:nowrap; padding-left:2px; }
+
+  .play-btn{
+    flex:0 0 34px; height:34px; border-radius:50%; border:none; background:var(--action-soft);
+    color:var(--action-text); display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .play-btn.is-running{ background:var(--action); color:var(--action-contrast); }
+  .play-btn:active{ transform:scale(0.92); }
+
+  .expanded-panel{ padding:4px 14px 16px; border-top:1px solid var(--border); cursor:default; }
+  .preset-row{ display:flex; gap:8px; margin-top:12px; }
+  .preset-btn{ flex:1; background:var(--action-soft); color:var(--action-text); border:none; border-radius:10px; padding:11px 4px; font-size:13px; font-weight:700; cursor:pointer; }
+  .preset-btn:active{ transform:scale(0.96); }
+
+  .custom-row{ display:flex; gap:8px; margin-top:12px; align-items:flex-end; }
+  .input-group{ display:flex; flex-direction:column; flex:0 0 64px; }
+  .input-group label{ font-size:10.5px; color:var(--muted); margin-bottom:4px; font-weight:600; }
+  .input-group input{
+    width:100%; padding:10px 8px; border:1px solid var(--border); border-radius:8px;
+    font-size:16px; font-family:var(--font-body); color:var(--ink); background:var(--input-bg);
+  }
+  .add-btn{ flex:1; background:var(--action); color:var(--action-contrast); border:none; border-radius:8px; padding:11px 10px; font-size:14px; font-weight:700; cursor:pointer; }
+  .add-btn:active{ transform:scale(0.97); }
+
+  .panel-footer-row{ display:flex; justify-content:space-between; align-items:center; margin-top:14px; }
+  .reset-inline-btn{ display:flex; align-items:center; gap:6px; background:none; border:none; color:var(--muted); font-size:12.5px; cursor:pointer; padding:4px 0; }
+  .remove-inline-btn{ display:flex; align-items:center; gap:6px; background:none; border:none; color:var(--danger); font-size:12.5px; cursor:pointer; padding:4px 0; }
+
+  .empty-state{ text-align:center; color:var(--muted); font-size:13.5px; padding:30px 10px; }
+
+  footer{ text-align:center; color:var(--muted); font-size:11.5px; margin-top:20px; }
+
+  button:focus-visible, .row-main:focus-visible, input:focus-visible{ outline:2px solid var(--action); outline-offset:2px; }
+
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:flex-end; justify-content:center; z-index:50; }
+  .modal-card{ background:var(--card); width:100%; max-width:480px; border-radius:20px 20px 0 0; padding:20px 18px 30px; max-height:82vh; overflow-y:auto; }
+  .modal-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .modal-header h2{ font-family:var(--font-display); font-size:19px; margin:0; color:var(--ink); }
+  .close-btn{ background:none; border:none; color:var(--muted); cursor:pointer; padding:4px; }
+
+  .theme-options{ display:flex; gap:10px; margin-bottom:22px; }
+  .theme-btn{ flex:1; padding:14px 8px; border-radius:12px; border:1px solid var(--border); background:var(--input-bg); color:var(--ink); font-weight:600; font-size:13.5px; cursor:pointer; }
+  .theme-btn.active{ border-color:var(--action); color:var(--action-text); background:var(--action-soft); }
+
+  .section-label{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; }
+
+  .danger-zone-btn{ width:100%; padding:13px; border-radius:12px; border:1px solid var(--border); background:none; color:var(--danger); font-weight:600; font-size:13.5px; cursor:pointer; }
+
+  .manage-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:18px; }
+  .manage-item{ display:flex; align-items:center; gap:10px; padding:9px 10px; background:var(--input-bg); border-radius:10px; }
+  .manage-item .icon-badge{ flex:0 0 30px; height:30px; font-size:14px; background:var(--border); }
+  .manage-item .name{ flex:1; font-size:14px; font-weight:600; }
+  .manage-item .trash-btn{ background:none; border:none; color:var(--danger); cursor:pointer; padding:4px; display:flex; }
+
+  .add-topic-row{ display:flex; gap:8px; }
+  .add-topic-row input{ flex:1; padding:11px 12px; border-radius:10px; border:1px solid var(--border); background:var(--input-bg); color:var(--ink); font-size:15px; }
+  .add-topic-row button{ background:var(--action); color:var(--action-contrast); border:none; border-radius:10px; padding:0 16px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+  @media (prefers-reduced-motion: reduce){ .bar-fill{ transition:none; } .live-dot{ animation:none; } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header-top">
+      <div>
+        <h1>Çalışma Takibi</h1>
+        <div class="subtitle" id="countLabel">0 konu</div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="settingsBtn" aria-label="Ayarlar"></button>
+        <button class="icon-btn" id="manageBtn" aria-label="Konuları Düzenle"></button>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="label">Toplam süre</div>
+      <div class="value" id="totalLabel">0 dk</div>
+    </div>
+    <div class="stat-grid" id="statGrid"></div>
+
+    <div class="list" id="list"></div>
+    <div id="modalRoot"></div>
+
+    <footer>Veriler yalnızca bu cihazda saklanır, internet gerekmez.</footer>
+  </div>
+
+<script>
+  var ICONS = {
+    gear: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"></circle><circle cx="12" cy="12" r="7.4"></circle><path d="M12 2.4v2.6M12 19v2.6M21.6 12h-2.6M5 12H2.4M18.6 5.4l-1.8 1.8M7.2 16.8l-1.8 1.8M18.6 18.6l-1.8-1.8M7.2 7.2 5.4 5.4"></path></svg>',
+    pencil: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg>',
+    play: '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 4l14 8-14 8V4z" fill="currentColor"></path></svg>',
+    pause: '<svg viewBox="0 0 24 24" width="16" height="16"><rect x="5" y="4" width="5" height="16" rx="1.4" fill="currentColor"></rect><rect x="14" y="4" width="5" height="16" rx="1.4" fill="currentColor"></rect></svg>',
+    reset: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path></svg>',
+    trash: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"></path></svg>',
+    plus: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>',
+    close: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>'
+  };
+
+  var STORAGE_KEY = 'calismaTakibiState_v2';
+
+  var DEFAULT_TOPICS = [
+    {name:'Coğrafya', icon:'🌍'},
+    {name:'Fizik', icon:'⚛️'},
+    {name:'Matematik', icon:'🧮'},
+    {name:'Tarih', icon:'🏛️'},
+    {name:'Din', icon:'🕌'},
+    {name:'Felsefe', icon:'🦉'},
+    {name:'Kimya', icon:'🧪'},
+    {name:'Biyoloji', icon:'🧬'},
+    {name:'Geometri', icon:'📐'},
+    {name:'Paragraf', icon:'📖'},
+    {name:'Dil Bilgisi', icon:'🔤'}
+  ];
+
+  var ICON_RULES = [
+    ['matemat','🧮'], ['geometri','📐'], ['fizik','⚛️'], ['kimya','🧪'],
+    ['biyoloji','🧬'], ['tarih','🏛️'], ['cograf','🌍'], ['din','🕌'],
+    ['felsefe','🦉'], ['paragraf','📖'], ['dil bil','🔤'], ['dilbilgisi','🔤'],
+    ['edebiyat','📚'], ['ingiliz','🗣️'], ['psikoloji','🧠'], ['sosyoloji','👥'],
+    ['mantik','🧩'], ['inkilap','🏳️']
+  ];
+  var DEFAULT_ICON = '📘';
+
+  function turkishToAscii(s){
+    var map = {'ç':'c','ğ':'g','ı':'i','ö':'o','ş':'s','ü':'u','Ç':'c','Ğ':'g','İ':'i','Ö':'o','Ş':'s','Ü':'u'};
+    return s.replace(/[çğıöşüÇĞİÖŞÜ]/g, function(ch){ return map[ch] || ch; });
+  }
+  function slugify(name){
+    return turkishToAscii(name).toLowerCase().trim().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') || ('konu-' + Date.now());
+  }
+  function pickIcon(name){
+    var lower = turkishToAscii(name).toLowerCase();
+    for(var i=0;i<ICON_RULES.length;i++){
+      if(lower.indexOf(ICON_RULES[i][0]) !== -1) return ICON_RULES[i][1];
+    }
+    return DEFAULT_ICON;
+  }
+
+  function defaultState(){
+    return {
+      theme:'dark',
+      topics: DEFAULT_TOPICS.map(function(t){ return {id:slugify(t.name), name:t.name, icon:t.icon, total:0}; }),
+      entries: [],
+      timer: {topicId:null, startTs:null}
+    };
+  }
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && Array.isArray(parsed.topics)) return parsed;
+      }
+    }catch(e){}
+    return defaultState();
+  }
+
+  function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
+
+  var state = loadState();
+  var expandedTopic = null;
+  var showSettings = false;
+  var showManage = false;
+  var tickInterval = null;
+
+  function formatDuration(minutes){
+    minutes = Math.round(minutes);
+    if(minutes <= 0) return '0 dk';
+    var h = Math.floor(minutes/60), m = minutes % 60;
+    if(h>0 && m>0) return h + ' sa ' + m + ' dk';
+    if(h>0) return h + ' sa';
+    return m + ' dk';
+  }
+  function formatClock(totalSeconds){
+    totalSeconds = Math.max(0, Math.floor(totalSeconds));
+    var h = Math.floor(totalSeconds/3600);
+    var m = Math.floor((totalSeconds%3600)/60);
+    var s = totalSeconds%60;
+    function pad(n){ return String(n).padStart(2,'0'); }
+    return h>0 ? (pad(h)+':'+pad(m)+':'+pad(s)) : (pad(m)+':'+pad(s));
+  }
+
+  function getRunningElapsedMinutes(){
+    if(state.timer.topicId && state.timer.startTs){
+      return (Date.now() - state.timer.startTs) / 60000;
+    }
+    return 0;
+  }
+
+  function startOfDay(ts){ var d=new Date(ts); d.setHours(0,0,0,0); return d.getTime(); }
+  function startOfWeek(ts){ var d=new Date(ts); var day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); d.setHours(0,0,0,0); return d.getTime(); }
+  function startOfMonth(ts){ var d=new Date(ts); d.setDate(1); d.setHours(0,0,0,0); return d.getTime(); }
+  function startOfYear(ts){ var d=new Date(ts); d.setMonth(0,1); d.setHours(0,0,0,0); return d.getTime(); }
+
+  function sumSince(sinceTs){
+    var sum = 0;
+    for(var i=0;i<state.entries.length;i++){ if(state.entries[i].ts >= sinceTs) sum += state.entries[i].minutes; }
+    return sum + getRunningElapsedMinutes();
+  }
+
+  function startTimer(topicId){
+    if(state.timer.topicId && state.timer.topicId !== topicId) commitTimer();
+    if(state.timer.topicId === topicId) return;
+    state.timer.topicId = topicId;
+    state.timer.startTs = Date.now();
+    saveState();
+    render();
+  }
+  function commitTimer(){
+    if(!state.timer.topicId) return;
+    var elapsed = getRunningElapsedMinutes();
+    var topic = state.topics.find(function(t){ return t.id===state.timer.topicId; });
+    if(topic){
+      topic.total += elapsed;
+      state.entries.push({topicId:topic.id, minutes:elapsed, ts:Date.now()});
+    }
+    state.timer.topicId = null;
+    state.timer.startTs = null;
+    saveState();
+  }
+  function pauseTimer(){ commitTimer(); render(); }
+  function discardTimer(){
+    state.timer.topicId = null;
+    state.timer.startTs = null;
+    saveState();
+    render();
+  }
+
+  function addTime(topicId, minutes){
+    if(!minutes) return;
+    var topic = state.topics.find(function(t){ return t.id===topicId; });
+    if(!topic) return;
+    topic.total += minutes;
+    state.entries.push({topicId:topicId, minutes:minutes, ts:Date.now()});
+    saveState();
+    render();
+  }
+
+  function removeTopic(topicId){
+    if(state.timer.topicId === topicId) discardTimer();
+    state.topics = state.topics.filter(function(t){ return t.id!==topicId; });
+    state.entries = state.entries.filter(function(e){ return e.topicId!==topicId; });
+    if(expandedTopic === topicId) expandedTopic = null;
+    saveState();
+    render();
+  }
+
+  function addTopic(name){
+    name = name.trim();
+    if(!name) return;
+    var id = slugify(name) + '-' + Date.now().toString(36);
+    state.topics.push({id:id, name:name, icon:pickIcon(name), total:0});
+    saveState();
+    render();
+  }
+
+  function setTheme(theme){
+    state.theme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    saveState();
+    render();
+  }
+
+  function resetAllTotals(){
+    state.topics.forEach(function(t){ t.total = 0; });
+    state.entries = [];
+    discardTimerSilently();
+    saveState();
+    render();
+  }
+  function discardTimerSilently(){ state.timer.topicId=null; state.timer.startTs=null; }
+
+  function renderModals(){
+    var root = document.getElementById('modalRoot');
+    if(showSettings){
+      root.innerHTML =
+        '<div class="modal-backdrop" id="settingsBackdrop">' +
+          '<div class="modal-card">' +
+            '<div class="modal-header"><h2>Ayarlar</h2><button class="close-btn" id="closeSettings">' + ICONS.close + '</button></div>' +
+            '<div class="section-label">Görünüm</div>' +
+            '<div class="theme-options">' +
+              '<button class="theme-btn' + (state.theme==='dark'?' active':'') + '" data-theme-choice="dark">Koyu</button>' +
+              '<button class="theme-btn' + (state.theme==='light'?' active':'') + '" data-theme-choice="light">Açık</button>' +
+            '</div>' +
+            '<div class="section-label">Veri</div>' +
+            '<button class="danger-zone-btn" id="resetAllBtn">Tüm süreleri sıfırla</button>' +
+          '</div>' +
+        '</div>';
+      document.getElementById('settingsBackdrop').addEventListener('click', function(e){ if(e.target.id==='settingsBackdrop'){ showSettings=false; render(); } });
+      document.getElementById('closeSettings').addEventListener('click', function(){ showSettings=false; render(); });
+      root.querySelectorAll('[data-theme-choice]').forEach(function(btn){
+        btn.addEventListener('click', function(){ setTheme(btn.getAttribute('data-theme-choice')); showSettings=true; });
+      });
+      document.getElementById('resetAllBtn').addEventListener('click', function(){
+        if(confirm('Tüm konulardaki süreleri sıfırlamak istediğine emin misin?')){ resetAllTotals(); showSettings=true; }
+      });
+    } else if(showManage){
+      var itemsHtml = state.topics.map(function(t){
+        return '<div class="manage-item">' +
+          '<div class="icon-badge">' + t.icon + '</div>' +
+          '<div class="name">' + t.name + '</div>' +
+          '<button class="trash-btn" data-remove="' + t.id + '">' + ICONS.trash + '</button>' +
+        '</div>';
+      }).join('') || '<div class="empty-state">Henüz konu yok</div>';
+
+      root.innerHTML =
+        '<div class="modal-backdrop" id="manageBackdrop">' +
+          '<div class="modal-card">' +
+            '<div class="modal-header"><h2>Konuları Düzenle</h2><button class="close-btn" id="closeManage">' + ICONS.close + '</button></div>' +
+            '<div class="manage-list">' + itemsHtml + '</div>' +
+            '<div class="section-label">Yeni konu ekle</div>' +
+            '<div class="add-topic-row">' +
+              '<input id="newTopicInput" type="text" placeholder="Konu adı" maxlength="30">' +
+              '<button id="addTopicBtn">' + ICONS.plus + '</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      document.getElementById('manageBackdrop').addEventListener('click', function(e){ if(e.target.id==='manageBackdrop'){ showManage=false; render(); } });
+      document.getElementById('closeManage').addEventListener('click', function(){ showManage=false; render(); });
+      root.querySelectorAll('[data-remove]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var id = btn.getAttribute('data-remove');
+          var topic = state.topics.find(function(t){ return t.id===id; });
+          if(confirm((topic?topic.name:'Bu konu') + ' kaldırılsın mı?')){ removeTopic(id); showManage=true; }
+        });
+      });
+      var input = document.getElementById('newTopicInput');
+      var addBtn = document.getElementById('addTopicBtn');
+      function submitNewTopic(){ addTopic(input.value); showManage=true; input.value=''; render(); document.getElementById('newTopicInput') && document.getElementById('newTopicInput').focus(); }
+      addBtn.addEventListener('click', submitNewTopic);
+      input.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); submitNewTopic(); } });
+    } else {
+      root.innerHTML = '';
+    }
+  }
+
+  function renderExpanded(topic){
+    var isRunning = state.timer.topicId === topic.id;
+    return '' +
+      '<div class="expanded-panel">' +
+        '<div class="preset-row">' +
+          '<button class="preset-btn" data-mins="10">+10 dk</button>' +
+          '<button class="preset-btn" data-mins="30">+30 dk</button>' +
+          '<button class="preset-btn" data-mins="60">+1 sa</button>' +
+          '<button class="preset-btn" data-mins="120">+2 sa</button>' +
+        '</div>' +
+        '<div class="custom-row">' +
+          '<div class="input-group"><label>Saat</label><input id="hourInput" type="number" min="0" inputmode="numeric" placeholder="0"></div>' +
+          '<div class="input-group"><label>Dakika</label><input id="minInput" type="number" min="0" max="59" inputmode="numeric" placeholder="0"></div>' +
+          '<button class="add-btn" id="customAddBtn">Ekle</button>' +
+        '</div>' +
+        '<div class="panel-footer-row">' +
+          (isRunning ? '<button class="reset-inline-btn" id="resetTimerBtn">' + ICONS.reset + ' Süreyi iptal et</button>' : '<span></span>') +
+          '<button class="remove-inline-btn" id="removeTopicBtn">' + ICONS.trash + ' Konuyu kaldır</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function render(){
+    var now = Date.now();
+    var allTimeTotal = state.topics.reduce(function(a,t){ return a+t.total; }, 0) + getRunningElapsedMinutes();
+    document.getElementById('totalLabel').textContent = formatDuration(allTimeTotal);
+    document.getElementById('countLabel').textContent = state.topics.length + ' konu';
+
+    var statGrid = document.getElementById('statGrid');
+    var periods = [
+      ['Bugün', sumSince(startOfDay(now))],
+      ['Bu Hafta', sumSince(startOfWeek(now))],
+      ['Bu Ay', sumSince(startOfMonth(now))],
+      ['Bu Yıl', sumSince(startOfYear(now))]
+    ];
+    statGrid.innerHTML = periods.map(function(p){
+      return '<div class="stat-chip"><div class="label">' + p[0] + '</div><div class="value">' + formatDuration(p[1]) + '</div></div>';
+    }).join('');
+
+    document.getElementById('settingsBtn').innerHTML = ICONS.gear;
+    document.getElementById('manageBtn').innerHTML = ICONS.pencil;
+
+    var sorted = state.topics.slice().sort(function(a,b){ return b.total - a.total; });
+    var maxVal = sorted.length ? sorted[0].total : 0;
+
+    var listEl = document.getElementById('list');
+    if(sorted.length === 0){
+      listEl.innerHTML = '<div class="empty-state">Henüz konu eklenmedi. Sağ üstteki kalem ikonuyla ekleyebilirsin.</div>';
+    } else {
+      listEl.innerHTML = sorted.map(function(topic, idx){
+        var isLeader = idx === 0 && topic.total > 0;
+        var pct = maxVal > 0 ? Math.max(4, Math.round((topic.total/maxVal)*100)) : 0;
+        var isExpanded = expandedTopic === topic.id;
+        var isRunning = state.timer.topicId === topic.id;
+        var liveLine = isRunning ? ('<div class="live-line"><span class="live-dot"></span>' + formatClock((now - state.timer.startTs)/1000) + ' çalışılıyor</div>') : '';
+
+        return '' +
+          '<div class="row' + (isLeader?' leader':'') + '">' +
+            '<div class="row-main" data-topic="' + topic.id + '" tabindex="0" role="button">' +
+              '<div class="icon-badge">' + topic.icon + '</div>' +
+              '<div class="row-info">' +
+                (isLeader ? '<div class="eyebrow">ZİRVEDE</div>' : '') +
+                '<div class="topic-name">' + topic.name + '</div>' +
+                '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>' +
+                liveLine +
+              '</div>' +
+              '<div class="time-value">' + formatDuration(topic.total) + '</div>' +
+              '<button class="play-btn' + (isRunning?' is-running':'') + '" data-play="' + topic.id + '">' + (isRunning?ICONS.pause:ICONS.play) + '</button>' +
+            '</div>' +
+            (isExpanded ? renderExpanded(topic) : '') +
+          '</div>';
+      }).join('');
+    }
+
+    listEl.querySelectorAll('.row-main').forEach(function(el){
+      el.addEventListener('click', function(){
+        var t = el.getAttribute('data-topic');
+        expandedTopic = (expandedTopic === t) ? null : t;
+        render();
+      });
+      el.addEventListener('keydown', function(e){ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); el.click(); } });
+    });
+
+    listEl.querySelectorAll('.play-btn').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var id = btn.getAttribute('data-play');
+        if(state.timer.topicId === id){ pauseTimer(); } else { startTimer(id); }
+      });
+    });
+
+    if(expandedTopic){
+      var panel = listEl.querySelector('.expanded-panel');
+      if(panel){
+        panel.addEventListener('click', function(e){ e.stopPropagation(); });
+
+        panel.querySelectorAll('.preset-btn').forEach(function(btn){
+          btn.addEventListener('click', function(){ addTime(expandedTopic, parseInt(btn.getAttribute('data-mins'),10)); });
+        });
+
+        var hourInput = panel.querySelector('#hourInput');
+        var minInput = panel.querySelector('#minInput');
+        var customAddBtn = panel.querySelector('#customAddBtn');
+        function submitCustom(){
+          var h = parseInt(hourInput.value,10) || 0;
+          var m = parseInt(minInput.value,10) || 0;
+          if(h===0 && m===0) return;
+          addTime(expandedTopic, h*60+m);
+        }
+        customAddBtn.addEventListener('click', submitCustom);
+        [hourInput, minInput].forEach(function(inp){
+          inp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); submitCustom(); } });
+        });
+
+        var resetTimerBtn = panel.querySelector('#resetTimerBtn');
+        if(resetTimerBtn){ resetTimerBtn.addEventListener('click', function(){ discardTimer(); }); }
+
+        var removeBtn = panel.querySelector('#removeTopicBtn');
+        var topicObj = state.topics.find(function(t){ return t.id===expandedTopic; });
+        removeBtn.addEventListener('click', function(){
+          if(confirm((topicObj?topicObj.name:'Bu konu') + ' kaldırılsın mı?')){ removeTopic(expandedTopic); }
+        });
+      }
+    }
+
+    renderModals();
+    ensureTicking();
+  }
+
+  function ensureTicking(){
+    if(state.timer.topicId && !tickInterval){
+      tickInterval = setInterval(render, 1000);
+    } else if(!state.timer.topicId && tickInterval){
+      clearInterval(tickInterval);
+      tickInterval = null;
+    }
+  }
+
+  document.getElementById('settingsBtn').addEventListener('click', function(){ showSettings=true; showManage=false; render(); });
+  document.getElementById('manageBtn').addEventListener('click', function(){ showManage=true; showSettings=false; render(); });
+
+  render();
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw.js').catch(function(){});
+    });
+  }
+</script>
+</body>
+</html>
