@@ -21,15 +21,16 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Use stable Node 20 to completely bypass the parser crash
+          node-version: '20' # Sticking with Node 20 to avoid the TS parser bug
 
       - name: Install npm dependencies
         run: npm install
 
-      # We manually create the dummy folders so Capacitor v7 sync doesn't complain,
-      # and force standard execution on Node 20.
+      # We explicitly install the CLI so npx recognizes it,
+      # create the dummy folders, and run the sync.
       - name: Force Sync Capacitor
         run: |
+          npm install @capacitor/cli
           mkdir -p www dist build
           npx cap sync android --no-telemetry
 
