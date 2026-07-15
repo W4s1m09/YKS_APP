@@ -21,26 +21,10 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
 
-      - name: Install dependencies
+      - name: Install npm dependencies
         run: npm install
-
-      - name: Force Sync Capacitor
-        run: |
-          # Install CLI explicitly to ensure npx finds it
-          npm install -D @capacitor/cli
-          mkdir -p www dist build
-          
-          # Convert .ts config to .json to bypass the Node 22 parsing bug
-          if [ -f capacitor.config.ts ]; then
-            npx --yes typescript@5 tsc capacitor.config.ts --module CommonJS --esModuleInterop --outDir .temp
-            # Simple conversion: this assumes your config is a default export
-            node -e 'const config = require("./.temp/capacitor.config.js").default; require("fs").writeFileSync("capacitor.config.json", JSON.stringify(config, null, 2));'
-            rm -rf .temp
-          fi
-          
-          npx cap sync android --no-telemetry
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
