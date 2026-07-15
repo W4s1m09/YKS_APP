@@ -21,16 +21,21 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22.11.0'
+          node-version: '22'
 
       - name: Install npm dependencies
         run: npm install
 
       - name: Force Sync Capacitor
         run: |
-          mkdir -p www
-          mkdir -p dist
-          mkdir -p build
+          mkdir -p www dist build
+          
+          # Bypasses the Capacitor config parsing bug by transpiling it to vanilla JS first
+          if [ -f capacitor.config.ts ]; then
+            npx --yes typescript@5 tsc capacitor.config.ts --module CommonJS
+            rm capacitor.config.ts
+          fi
+          
           npx cap sync android
 
       - name: Make gradlew executable
