@@ -21,22 +21,17 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20' # Use stable Node 20 to completely bypass the parser crash
 
       - name: Install npm dependencies
         run: npm install
 
+      # We manually create the dummy folders so Capacitor v7 sync doesn't complain,
+      # and force standard execution on Node 20.
       - name: Force Sync Capacitor
         run: |
           mkdir -p www dist build
-          
-          # Bypasses the Capacitor config parsing bug by transpiling it to vanilla JS first
-          if [ -f capacitor.config.ts ]; then
-            npx --yes typescript@5 tsc capacitor.config.ts --module CommonJS
-            rm capacitor.config.ts
-          fi
-          
-          npx cap sync android
+          npx cap sync android --no-telemetry
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
