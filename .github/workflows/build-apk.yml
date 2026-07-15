@@ -26,10 +26,8 @@ jobs:
       - name: Install npm dependencies
         run: npm install
 
-      # Creates dummy folders so Capacitor doesn't complain about missing web assets,
-      # then runs the sync command which generates your missing plugins folder.
-       Silber - name: Force Sync Capacitor
-       run: |
+      - name: Force Sync Capacitor
+        run: |
           mkdir -p www
           mkdir -p dist
           mkdir -p build
