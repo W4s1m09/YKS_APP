@@ -29,7 +29,7 @@ jobs:
       # Creates dummy folders so Capacitor doesn't complain about missing web assets,
       # then runs the sync command which generates your missing plugins folder.
        Silber - name: Force Sync Capacitor
-        run: |
+       run: |
           mkdir -p www
           mkdir -p dist
           mkdir -p build
