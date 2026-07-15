@@ -21,21 +21,19 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '22' # Required for Capacitor 8+
 
-      - name: Install npm dependencies
+      - name: Install dependencies
         run: npm install
 
       - name: Force Sync Capacitor
         run: |
+          # Explicitly install the CLI to ensure npx can find it
+          npm install -D @capacitor/cli
+          # Ensure directories exist to prevent sync errors
           mkdir -p www dist build
-          
-          if [ -f capacitor.config.ts ]; then
-            npx --yes typescript@5 tsc capacitor.config.ts --module CommonJS
-            rm capacitor.config.ts
-          fi
-          
-          npx cap sync android
+          # Execute sync
+          npx cap sync android --no-telemetry
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
